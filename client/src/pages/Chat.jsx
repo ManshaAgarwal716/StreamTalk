@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createSocket } from "../services/socket";
+import api from "../services/api";
 function Chat() {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -10,6 +11,33 @@ function Chat() {
     if (!token) {
         return ;
     }
+    const fetchMessages = async () => {
+    try {
+      const response = await api.get(
+        `/messages/${roomId}`,
+        {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const oldMessages = response.data.map((msg) => ({
+        sender: msg.sender.username,
+        message: msg.content,
+        createdAt: msg.createdAt,
+      }));
+
+      setMessages(oldMessages);
+    } catch (error) {
+      console.error(
+        "Error fetching messages:",
+        error
+      );
+    }
+  };
+
+  fetchMessages();
     const newSocket = createSocket(token);
     newSocket.on("connect", () => {
       console.log("Connected:", newSocket.id);

@@ -1,3 +1,4 @@
+const Message = require("../models/messages");
 const socketHandler = (io) => {
   io.on("connection", (socket) => {
     console.log(
@@ -9,24 +10,32 @@ const socketHandler = (io) => {
     console.log(
         `User ${socket.userId} joined room ${roomId}`
       );});
-    socket.on("send_message", ({ roomId, message }) => {
+    socket.on(
+  "send_message",
+  async ({ roomId, message }) => {
+    try {
+      const savedMessage = await Message.create({
+        sender: socket.userId,
+        roomId,
+        content: message,
+      });
+
       const payload = {
         sender: socket.userId,
         roomId,
-        message,
-        createdAt: new Date(),
+        message: savedMessage.content,
+        createdAt: savedMessage.createdAt,
       };
 
       io.to(roomId).emit(
         "receive_message",
         payload
       );
-    });
-    socket.on("disconnect", () => {
-      console.log(
-        `User disconnected: ${socket.userId}`
-      );
-    });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+);
   });
 };
 
