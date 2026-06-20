@@ -1,17 +1,33 @@
-import {getuserfromsession} from "./auth.js";
-async function restricttologgedinusers(req, res, next) {
-    const userid=req.cookies?.uid;
-    if(!userid){
-        return res.status(401).json({
-            message:"Unauthorized"
-        });
-    }
-    const user = await getuserfromsession(userid);
-    if (!user) {
-        return res.status(401).json({
-            message:"Unauthorized"
-        });
-    }
-    req.user = user;
+const jwt = require("jsonwebtoken");
+
+const restrictToLoggedInUsers = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (
+    !authHeader ||
+    !authHeader.startsWith("Bearer ")
+  ) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    req.user = decoded;
+
     next();
-}
+  } catch (error) {
+    return res.status(401).json({
+      message: "Invalid or expired token",
+    });
+  }
+};
+
+module.exports = restrictToLoggedInUsers;
